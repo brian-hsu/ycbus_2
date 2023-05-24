@@ -1,1 +1,1 @@
-# ycbus_2
+# ycbus-2
