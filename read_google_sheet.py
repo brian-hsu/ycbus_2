@@ -93,7 +93,7 @@ class ReadGSheet:
 
         # 比较今天的日期与给定的日期
         if given_date >= today:
-            job = "Bus"
+            job = "Bus-new"
             print("给定的日期是未来时间")
             from update_jenkins_job import UpdateJenkinsJob
             jenkins = UpdateJenkinsJob()
