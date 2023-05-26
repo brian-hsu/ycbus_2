@@ -2,6 +2,7 @@ import pygsheets
 import google.auth
 from google.oauth2 import service_account
 from datetime import datetime
+import pysnooper
 
 
 class ReadGSheet:
@@ -60,6 +61,7 @@ class ReadGSheet:
 
         return requests.post(url, headers=headers, data=data)  # 發送 LINE Notify
 
+    @pysnooper.snoop()
     def check_booking(self):
         gsheet_cover = self.mydata["gsheet_cover"]
         sheet = self.gc.open_by_key(gsheet_cover).sheet1
@@ -90,10 +92,27 @@ class ReadGSheet:
             print(f"update [{job}] => {job_up_time}")
             jenkins.job_update_trigger(job, job_up_time)
 
-            self.line_notify(f"Job={job}, Set trigger date: {date_l[0]}/{date_l[1]}, AM:6:58",
-                             token=self.mydata["line_token"])
+            get_date = self.get_sent_dates()
+            date_string = f"{date_l[0]}/{date_l[1]}"
+            if get_date != date_string:
+                self.line_notify(f"Job={job}, Set trigger date: {date_l[0]}/{date_l[1]}, AM:6:58",
+                                 token=self.mydata["line_token"])
+                self.record_sent_date(date_string)
         else:
             print("给定的日期是过去时间")
+
+    @staticmethod
+    def record_sent_date(date):
+        with open('sent_dates.txt', 'w') as f:
+            f.write(str(date))
+
+    @staticmethod
+    def get_sent_dates():
+        try:
+            with open('sent_dates.txt', 'r') as f:
+                return f.read()
+        except FileNotFoundError:
+            return []
 
 
 if __name__ == '__main__':

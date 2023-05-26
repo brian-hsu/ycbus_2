@@ -1,8 +1,8 @@
 import os
 import re
-# import logging
+
 import time
-# from logging.config import fileConfig
+
 from selenium import webdriver
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -15,14 +15,10 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.service import Service as ChromeService
 from webdriver_manager.chrome import ChromeDriverManager
 from datetime import datetime
-from pathlib import Path
 import datetime
 import requests
 from read_google_sheet import ReadGSheet
 
-
-# fileConfig('logging_config.ini')
-# my_debug_log = logging.getLogger(__name__).debug
 
 def read_txt_to_dict(file_name):
     # 開啟文件並讀取內容
@@ -31,7 +27,7 @@ def read_txt_to_dict(file_name):
 
     result = {}
     for line in lines:
-        # 分割每行的資訊並加入字典
+        # 分割每行的資訊並加入字典 用':'當作介質
         key, value = line.strip().split(":")
         result[key] = value
 
@@ -63,12 +59,13 @@ def line_notify(msg, png_path=None):
 
 def gc_load():
     def check_area(area):
+        # 新北地區
         area_a = ["板橋", "新莊", "蘆洲", "三重", "泰山", "五股", "淡水", "樹林", "中和", "永和", "土城", "新店",
                   "石碇",
                   "深坑", "烏來", "三峽", "鶯歌", "瑞芳", "貢寮", "雙溪", "平溪", "三芝", "汐止", "坪林", "瑞芳",
                   "萬里",
                   "金山", "林口", "石門", "八里"]
-
+        # 台北市地區
         area_b = ["北投", "大安", "萬華", "大同", "中山", "松山", "信義", "南港", "中正", "文山", "士林", "內湖"]
         if area in area_a:
             return 'a'
@@ -98,7 +95,7 @@ def gc_load():
     # goOn Address
     if gc_dict["return_pickup_area"] == "same_goto_dropoff":
         user_data['back_on_city'] = user_data['go_off_city']
-        user_data['back_on_area'] = user_data["go_off_area"]
+        user_data['back_on_area'] = user_data['go_off_area']
     else:
         user_data['back_on_city'] = check_area(gc_dict["return_pickup_area"])
         user_data['back_on_area'] = gc_dict["return_pickup_area"]
@@ -138,10 +135,10 @@ def start_count(set_time):
                 status = 0
 
             else:
-
                 print("尚未到 %s, 現在時間: [%s]" % (lock_time, now_time))
+
         except:
-            pass
+            print("function: start_count something wrong")
 
     print("""
     ======================
@@ -308,8 +305,10 @@ class AutoReserve:
                 #     status = 0
                 else:
                     print("尚未到 %s, 現在時間: [%s]" % (lock_time, search_time.group(0)))
-            except:
-                pass
+            except AttributeError:
+                print("search_time 可能為 None，請檢查是否正確抓取到時間")
+            except IndexError:
+                print("search_time 可能未找到所有時間組，請檢查時間格式是否正確")
 
         self.reserve()
 
@@ -429,8 +428,8 @@ class AutoReserve:
     def save(self):
         try:
             (self.wait_element('saveButton')).click()
-        finally:
-            pass
+        except:
+            print("function: save, something wrong")
 
     def choose(self):
         try:
@@ -614,5 +613,5 @@ def run(mod):
 
 if __name__ == '__main__':
     # run("desktop")
-    run("Debug")
-    # run("server")
+    # run("Debug")
+    run("server")
