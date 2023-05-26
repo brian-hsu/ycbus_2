@@ -61,11 +61,12 @@ class ReadGSheet:
 
         return requests.post(url, headers=headers, data=data)  # 發送 LINE Notify
 
-    @pysnooper.snoop()
+    # @pysnooper.snoop()
     def check_booking(self):
         def record_sent_date(date):
             with open('sent_dates.txt', 'w') as f:
                 f.write(str(date))
+
         def get_sent_dates():
             try:
                 with open('sent_dates.txt', 'r') as f:
@@ -102,14 +103,14 @@ class ReadGSheet:
             print(f"update [{job}] => {job_up_time}")
             jenkins.job_update_trigger(job, job_up_time)
 
-<<<<<<< HEAD
-            get_date = self.get_sent_dates()
-            date_string = f"{date_l[0]}/{date_l[1]}"
-            if get_date != date_string:
-                self.line_notify(f"Job={job}, Set trigger date: {date_l[0]}/{date_l[1]}, AM:6:58",
-                                 token=self.mydata["line_token"])
-                self.record_sent_date(date_string)
-=======
+            # <<<<<<< HEAD
+            #             get_date = self.get_sent_dates()
+            #             date_string = f"{date_l[0]}/{date_l[1]}"
+            #             if get_date != date_string:
+            #                 self.line_notify(f"Job={job}, Set trigger date: {date_l[0]}/{date_l[1]}, AM:6:58",
+            #                                  token=self.mydata["line_token"])
+            #                 self.record_sent_date(date_string)
+            # =======
             sent_dates = get_sent_dates()
             formatted_date = f"{date_l[0]}/{date_l[1]}"
 
@@ -117,9 +118,9 @@ class ReadGSheet:
                 self.line_notify(f"Job={job}, Set trigger date: {date_l[0]}/{date_l[1]}, AM:6:58",
                                  token=self.mydata["line_token"])
 
-            record_sent_date(formatted_date)
+            self.record_sent_date(formatted_date)
 
->>>>>>> feature
+        # >>>>>>> feature
         else:
             print("给定的日期是过去时间")
 
