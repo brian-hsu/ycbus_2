@@ -61,6 +61,16 @@ class ReadGSheet:
         return requests.post(url, headers=headers, data=data)  # 發送 LINE Notify
 
     def check_booking(self):
+        def record_sent_date(date):
+            with open('sent_dates.txt', 'w') as f:
+                f.write(str(date))
+        def get_sent_dates():
+            try:
+                with open('sent_dates.txt', 'r') as f:
+                    return f.read()  # 返回整个文件内容作为一个字符串
+            except FileNotFoundError:
+                return ''
+
         gsheet_cover = self.mydata["gsheet_cover"]
         sheet = self.gc.open_by_key(gsheet_cover).sheet1
         # 从 Google Sheets 读取数据
@@ -90,8 +100,15 @@ class ReadGSheet:
             print(f"update [{job}] => {job_up_time}")
             jenkins.job_update_trigger(job, job_up_time)
 
-            self.line_notify(f"Job={job}, Set trigger date: {date_l[0]}/{date_l[1]}, AM:6:58",
-                             token=self.mydata["line_token"])
+            sent_dates = get_sent_dates()
+            formatted_date = f"{date_l[0]}/{date_l[1]}"
+
+            if sent_dates != formatted_date:
+                self.line_notify(f"Job={job}, Set trigger date: {date_l[0]}/{date_l[1]}, AM:6:58",
+                                 token=self.mydata["line_token"])
+
+            record_sent_date(formatted_date)
+
         else:
             print("给定的日期是过去时间")
 
