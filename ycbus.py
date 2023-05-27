@@ -53,7 +53,10 @@ def line_notify(msg, png_path=None):
         image_file = {'imageFile': image}  # 設定圖片資訊
     else:
         image_file = None
-    return requests.post(url, headers=headers, data=data, files=image_file)  # 發送 LINE Notify
+
+    # 發送 LINE Notify
+    return requests.post(url, headers=headers, data=data, files=image_file, timeout=5)
+
     # return requests.post(url, headers=headers, data=data)
 
 
