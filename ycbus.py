@@ -284,14 +284,24 @@ class AutoReserve:
 
             options = Options()
             if headless == 0:
-                options.headless = True
-            options.set_preference("javascript.enabled", True)
+                # options.headless = True
+                options.add_argument("--headless")
+
             # options.set_preference("intl.accept_languages", 'zh-TW, zh')
-            options.add_argument("--disable-gpu")
-            options.add_argument("lang=zh-TW")
+            # options.add_argument("lang=zh-TW")
+            options.add_argument("--lang=zh-TW")
+            # 基本設定
+            options.set_preference("javascript.enabled", True)  # 啟用 JavaScript
+
+            # 效能優化設定
+            options.add_argument("--disable-gpu")  # 停用 GPU 加速
+            options.add_argument("--disable-extensions")  # 停用擴充功能
+            options.add_argument("--no-sandbox")  # 停用沙盒模式
+            options.add_argument("--disable-dev-shm-usage")  # 避免記憶體不足問題
             return webdriver.Firefox(
                 service=FirefoxService(
-                    GeckoDriverManager(cache_valid_range=28).install()
+                    GeckoDriverManager().install(),
+                    log_path="geckodriver.log",  # 記錄 driver 日誌
                 ),
                 options=options,
             )
@@ -344,34 +354,60 @@ class AutoReserve:
                     print("Fail try %s count" % i)
 
     def loop_now_time(self, set_lock, debug_flag=0):
+        """
+        等待並檢查時間
+        
+        Args:
+            set_lock (str): 目標時間（格式：HH:MM）
+            debug_flag (int): 是否為除錯模式
+        """
         status = 1
         if debug_flag == 1:
             status = 0
-
+            
+        print(f"開始等待時間: {set_lock}")
+        
         while status == 1:
-            time.sleep(1)
-            # time_get = self.driver.find_element_by_css_selector(self.css['timeClock']).text
-            time_get = self.driver.find_element(
-                By.CSS_SELECTOR, self.css["timeClock"]
-            ).text
-            regex = re.compile(r"\d{4}-\d{2}-\d{2} (\d{2}:\d{2}):(\d{2})")
-            search_time = regex.search(time_get)
-
-            lock_time = set_lock
-
             try:
-                if search_time.group(1) == lock_time and int(search_time.group(2)) > 0:
-                    print("時間到: %s" % lock_time)
-                    status = 0
-                # elif debug_flag == 1:
-                #     status = 0
-                else:
-                    print("尚未到 %s, 現在時間: [%s]" % (lock_time, search_time.group(0)))
-            except AttributeError:
-                print("search_time 可能為 None，請檢查是否正確抓取到時間")
-            except IndexError:
-                print("search_time 可能未找到所有時間組，請檢查時間格式是否正確")
-
+                # 等待時間元素出現
+                time_element = WebDriverWait(self.driver, 10).until(
+                    EC.presence_of_element_located((By.CSS_SELECTOR, self.css["timeClock"]))
+                )
+                time_get = time_element.text.strip()
+                print(f"取得的原始時間字串: {time_get}")
+                
+                # 解析時間的不同格式
+                if '/' in time_get:  # 處理 MM/DD HH:MM 格式
+                    match = re.search(r"\d{2}/\d{2}\s+(\d{2}:\d{2})", time_get)
+                    if match:
+                        current_time = match.group(1)
+                        if current_time == set_lock:
+                            print(f"時間到: {set_lock}")
+                            status = 0
+                            break
+                        print(f"尚未到 {set_lock}, 現在時間: [{time_get}]")
+                else:  # 處理其他格式
+                    match = re.search(r"(\d{2}:\d{2}):(\d{2})", time_get)
+                    if match and match.group(1) == set_lock:
+                        seconds = int(match.group(2))
+                        if seconds > 0:
+                            print(f"時間到: {set_lock}")
+                            status = 0
+                            break
+                        print(f"尚未到 {set_lock}, 現在時間: [{time_get}]")
+                
+                time.sleep(0.5)
+                
+            except TimeoutException:
+                print("等待時間元素超時，重新整理頁面")
+                self.driver.refresh()
+                time.sleep(2)
+                
+            except Exception as e:
+                print(f"讀取時間時發生錯誤: {str(e)}")
+                time.sleep(1)
+        
+        # 執行預約流程
         self.reserve()
 
     def check_enter(self):
@@ -456,7 +492,9 @@ class AutoReserve:
     def check_has_car(self, get_car_time, time_data_name):
         print("== 檢查班次 是否有車班 ==")
         # regex = re.compile(r'%s \[(有車班|車班已滿\.排候補)\]' % self.data[time_data_name])
-        regex = re.compile(r"%s \[(有車班|車班已滿\.排候補)]" % self.data[time_data_name])
+        regex = re.compile(
+            r"%s \[(有車班|車班已滿\.排候補)]" % self.data[time_data_name]
+        )
         car_status = regex.search(get_car_time)
         # my_debug_log(car_status.groups())
 
@@ -646,7 +684,7 @@ def run(mod):
     if mod == "desktop":
         start_count("06:58")  # 設定時間 啟動 webdriver
         # yc_bus = AutoReserve(data, browser_type="firefox")
-        yc_bus = AutoReserve(f_data, browser_type="chrome", headless=1)
+        yc_bus = AutoReserve(f_data, browser_type="ff", headless=0)
 
         print("如果瀏覽器上未使用完成請勿關閉此視窗\n")
         yc_bus.login()
@@ -677,12 +715,13 @@ def run(mod):
 
         yc_bus.loop_now_time(
             "07:00", debug_flag=0
+            # "11:58", debug_flag=0
         )  # debug_flag=1 忽略 7:00 倒數, debug_flag=0 啟用
         # yc_bus.reserve() #feature is deprecated
         yc_bus.choose()
         yc_bus.address()
         time.sleep(0.5)
-        yc_bus.save()
+        # yc_bus.save()
 
         time.sleep(2)
         yc_bus.main_to_check_page()
