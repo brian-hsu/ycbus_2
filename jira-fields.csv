@@ -1,0 +1,79 @@
+Field Type,Field Name,Value
+Core,Issue Type,Bug
+Core,Issue Type,Task
+Core,Issue Type,Improvement
+Core,Issue Type,New Feature
+Core,Status,Feedback
+Core,Status,Done
+Core,Status,In Progress
+Core,Status,In Review
+Core,Status,To Do
+Core,Status,Trace
+Core,Status,Won't Fix
+Core,Status,Pending
+Core,Project Key,UBBL
+Core,Project Name,US Beta Bug List
+Core,Project Type,software
+Core,Priority,Medium
+Core,Priority,Highest
+Core,Priority,High
+Core,Priority,Low
+Core,Resolution,Done
+Custom,Bug Category,Specification Unclear
+Custom,Bug Category,Function- Not Working
+Custom,Bug Category,UI- Not Following spec
+Custom,Bug Category,Function - Not Follow Spec
+Custom,Bug Category,Function- Crash
+Custom,Bug Category,Side Effect- Function Not Working
+Custom,Bug Category,UI- Capability
+Custom,Development,{}
+Custom,Environment,Sandbox
+Custom,Environment,Pre-Production
+Custom,Environment,Production
+Custom,Epic Color,ghx-label-5
+Custom,Epic Color,ghx-label-9
+Custom,Final work story point,0.0
+Custom,Final work story point,4.0
+Custom,From US Team Report,No
+Custom,Issue color,dark_teal
+Custom,Issue color,orange
+Custom,Issue color,purple
+Custom,MET Type,Task
+Custom,MET Type,Bug
+Custom,New Feature,No
+Custom,New Feature,Yes
+Custom,Platform,IOS
+Custom,Platform,Backend
+Custom,Platform,Android
+Custom,Platform,Frontend
+Custom,Platform,Design
+Custom,Platform,SA
+Custom,Platform,Other
+Custom,Platform,DevOps
+Custom,Product,ConnectSmart
+Custom,Product,VDOT
+Custom,Product,GoEzy
+Custom,Product,HCS Vanpool
+Custom,Team,DEVOPS [DEVOPS]
+Custom,Testing Device,Android
+Custom,Testing Device,Android 14
+Custom,Ticket Owner,Yi-Chang Chiu
+Custom,Ticket Owner,Claudia Kuo
+Custom,Ticket Owner,Monica Tsai
+Custom,Timesheet project,VanPool
+Custom,Timesheet project,Product development
+Custom,Timesheet project,ConnectSmart & iR&D
+Custom,Severity,P1
+Custom,Severity,P2
+Custom,Severity,P3
+Custom,Severity,P4
+Custom,Task Category,N/A
+Custom,Task Category,[PO] New feature
+Custom,Task Category,[SA] Spec undefined
+Custom,Task Category,[Dev] Refactoring
+Custom,Task Category,[DevOps] Sprint Task
+Custom,Task Category,[PO] Improvement
+Custom,Task Category,[PO] Scope change
+System,Status Category,In Progress
+System,Status Category,Done
+System,Status Category,To Do

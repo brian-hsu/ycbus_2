@@ -1,0 +1,10 @@
+{
+    "booking": {
+        "username": "你的用戶名",
+        "password": "你的密碼",
+        "route": "路線編號",
+        "date": "預約日期",
+        "time": "預約時間"
+    },
+    "line_token": "你的 Line Notify Token"
+} 

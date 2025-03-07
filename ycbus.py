@@ -710,7 +710,7 @@ def run(mod):
                 q = 0
                 yc_bus.driver_quit()
     elif mod == "server":
-        yc_bus = AutoReserve(f_data, browser_type="ff", headless=0)
+        yc_bus = AutoReserve(f_data, browser_type="ff", headless=1)
         yc_bus.login()
 
         yc_bus.loop_now_time(

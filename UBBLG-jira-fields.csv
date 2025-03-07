@@ -1,0 +1,50 @@
+Field Type,Field Name,Value
+Core,Issue Type,Bug
+Core,Issue Type,Task
+Core,Issue Type,Improvement
+Core,Status,In Progress
+Core,Status,To Do
+Core,Status,Trace
+Core,Status,Done
+Core,Status,In Review
+Core,Status,Won't Fix
+Core,Status,Feedback
+Core,Project Key,UBBLG
+Core,Project Name,US Beta Bug List - GMWVA
+Core,Project Type,software
+Core,Project Lead,Jeff Lin
+Core,Project Lead ID,557058:99c786c8-d87f-4d36-a9dd-9653b56069f5
+Core,Priority,Medium
+Core,Priority,Highest
+Core,Priority,High
+Core,Resolution,Done
+Core,Due Date,14/Jan/25 12:00 AM
+Core,Due Date,06/Dec/24 12:00 AM
+Core,Due Date,05/Dec/24 12:00 AM
+Core,Votes,0
+Core,Labels,IM
+Core,Labels,v132
+Core,Labels,DEP_Data_Issue
+Core,Labels,v133
+Custom,Bug Category,Function- Capability
+Custom,Bug Category,Function - Not Follow Spec
+Custom,Development,{}
+Custom,Environment,Sandbox
+Custom,Final work story point,0.0
+Custom,From US Team Report,No
+Custom,MET Type,Bug
+Custom,MET Type,Task
+Custom,New Feature,No
+Custom,Product,VDOT
+Custom,Product,ConnectSmart
+Custom,RPM,Yi-Chang Chiu
+Custom,RPM,Jeff Lin
+Custom,RPM,Monica Tsai
+Custom,Severity,P3
+Custom,Start date,11/Dec/24 12:00 AM
+Custom,Task Category,N/A
+Custom,Testing Device,Pixel - Android
+Custom,Ticket Owner,Henry Wang
+System,Status Category,In Progress
+System,Status Category,To Do
+System,Status Category,Done

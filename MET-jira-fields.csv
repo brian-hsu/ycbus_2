@@ -1,0 +1,86 @@
+Field Type,Field Name,Value
+Core,Issue Type,Bug
+Core,Issue Type,Task
+Core,Issue Type,Epic
+Core,Issue Type,Sub-task
+Core,Status,To Do
+Core,Status,IN QA REVIEW
+Core,Status,In Progress
+Core,Status,Done
+Core,Status,Won't Fix
+Core,Status,Trace
+Core,Status,Pending
+Core,Status,PO Review
+Core,Project Key,MET
+Core,Project Name,Metropia 2.0
+Core,Project Type,software
+Core,Project Lead,Henry Wang
+Core,Project Lead ID,5abd87f49f413b40805bd485
+Core,Priority,High
+Core,Priority,Medium
+Core,Priority,Highest
+Core,Priority,Low
+Core,Resolution,Done
+Core,Votes,0
+Core,Labels,SkipReopen
+Core,Labels,hasCount
+Custom,Development,{}
+Custom,Environment,Production
+Custom,Environment,Sandbox
+Custom,Epic Color,ghx-label-1
+Custom,Epic Color,ghx-label-2
+Custom,Epic Color,ghx-label-4
+Custom,Epic Color,ghx-label-7
+Custom,Epic Color,ghx-label-10
+Custom,Epic Name,ParkZen Integration
+Custom,Epic Name,Vendor Service/External API Monitoring & Error Handling Enhancements
+Custom,Epic Name,Translation Workflow
+Custom,Epic Name,Carbon Cred
+Custom,Epic Status,To Do
+Custom,From US Team Report,No
+Custom,From US Team Report,Yes
+Custom,Issue Color,purple
+Custom,Issue Color,dark_grey
+Custom,Issue Color,dark_yellow
+Custom,Issue Color,dark_blue
+Custom,Issue Color,orange
+Custom,Issue Color,blue
+Custom,MET Type,Bug
+Custom,New Feature,No
+Custom,Platform,IOS
+Custom,Platform,Backend
+Custom,Platform,Android
+Custom,Platform,Design
+Custom,Platform,QA
+Custom,Platform,SA
+Custom,Platform,Frontend
+Custom,Platform,DevOps
+Custom,Product,ConnectSmart
+Custom,Product,VDOT
+Custom,Product,Umaji
+Custom,Severity,P3
+Custom,Severity,P4
+Custom,Severity,P2
+Custom,Sprint,MET Sprint 133
+Custom,Sprint,MET Sprint 134
+Custom,Sprint,MET Sprint 132
+Custom,Sprint,MET Sprint 131
+Custom,Sprint,MET Sprint 130
+Custom,Sprint,MET Sprint 129
+Custom,Story Points2,4.0
+Custom,Story Points2,24.0
+Custom,Task Category,N/A
+Custom,Task Category,[PO] New feature
+Custom,Task Category,[DevOps] Sprint Task
+Custom,Task Category,[Dev] Sprint Task
+Custom,Task Category,[Dev] Refactoring
+Custom,Task Category,[PO] Improvement
+Custom,Team,BE [BACKEND DEVELOPER]
+Custom,Team,DEVOPS [DEVOPS]
+Custom,Team,UIUX
+Custom,Testing Device,v.92.0
+Custom,Testing Device,Android
+Custom,Testing Device,Pixel - Android
+System,Status Category,To Do
+System,Status Category,In Progress
+System,Status Category,Done
