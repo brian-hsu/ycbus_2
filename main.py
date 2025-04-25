@@ -21,6 +21,7 @@ import random
 import base64
 from collections import Counter
 from utils.gmail_sender import GmailSender
+from config import BASE_URL
 
 
 def parse_arguments():
@@ -512,7 +513,7 @@ def main():
 
         booking_data = BookingData(**booking_data_dict)
         
-        # 創建通知器 - 優先使用電子郵件通知，如果電子郵件配置不完整則使用Line通知
+        # 創建通知器 - 只使用電子郵件通知
         if (notification_data.get("gmail_sender") and 
             notification_data.get("gmail_password") and 
             notification_data.get("recipient_emails")):
@@ -524,8 +525,8 @@ def main():
                 sender_name="預約系統通知"
             )
         else:
-            print("使用Line進行通知")
-            notifier = LineNotifier(notification_data["line_token"])
+            print("錯誤：未配置電子郵件通知所需的設定")
+            raise ValueError("請在 data.txt 中配置 gmail_sender、gmail_password 和 recipient_emails")
 
         # 創建Firefox選項並設定偏好
         firefox_options = Options()

@@ -1245,6 +1245,9 @@ class BusBookingSystem:
     def navigate_to_login_page(self):
         """導航到登入頁面"""
         try:
+            if not hasattr(self, 'driver'):
+                raise ValueError("瀏覽器驅動未初始化")
+                
             self.logger.info(f"正在導航到登入頁面: {BASE_URL}")
             
             # 先嘗試處理可能存在的警告對話框
