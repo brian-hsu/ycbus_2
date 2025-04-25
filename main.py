@@ -619,7 +619,44 @@ def main():
 </html>
 """
                     
-                    # Gmail 通知設定
+                    # 檢查截圖是否存在
+                    attachments = []
+                    if screenshot_path:
+                        try:
+                            # 檢查檔案是否存在
+                            if not os.path.exists(screenshot_path):
+                                print(f"錯誤：截圖檔案不存在: {screenshot_path}")
+                                raise FileNotFoundError(f"截圖檔案不存在: {screenshot_path}")
+                            
+                            # 檢查檔案是否可讀
+                            if not os.access(screenshot_path, os.R_OK):
+                                print(f"錯誤：截圖檔案無法讀取: {screenshot_path}")
+                                raise PermissionError(f"截圖檔案無法讀取: {screenshot_path}")
+                            
+                            # 檢查檔案大小
+                            file_size = os.path.getsize(screenshot_path)
+                            if file_size == 0:
+                                print(f"錯誤：截圖檔案大小為 0: {screenshot_path}")
+                                raise ValueError(f"截圖檔案大小為 0: {screenshot_path}")
+                            
+                            # 檢查檔案格式
+                            try:
+                                with Image.open(screenshot_path) as img:
+                                    img.verify()
+                            except Exception as e:
+                                print(f"錯誤：截圖檔案格式無效: {screenshot_path}, 錯誤: {str(e)}")
+                                raise ValueError(f"截圖檔案格式無效: {screenshot_path}")
+                            
+                            attachments.append(screenshot_path)
+                            print(f"成功添加截圖附件: {screenshot_path}, 檔案大小: {file_size} bytes")
+                            
+                        except Exception as e:
+                            print(f"處理截圖檔案時發生錯誤: {str(e)}")
+                            # 繼續執行，不中斷郵件發送
+                    else:
+                        print("警告：未提供截圖路徑")
+                    
+                    # 發送郵件
                     gmail_notifier = EmailNotifier(
                         sender_email=notification_data["gmail_sender"],
                         app_password=notification_data["gmail_password"],
@@ -627,15 +664,6 @@ def main():
                         sender_name="預約系統通知"
                     )
                     
-                    # 檢查截圖是否存在
-                    attachments = []
-                    if screenshot_path and os.path.exists(screenshot_path):
-                        attachments.append(screenshot_path)
-                        print(f"找到截圖檔案：{screenshot_path}")
-                    else:
-                        print(f"警告：找不到截圖檔案：{screenshot_path}")
-                    
-                    # 發送郵件
                     gmail_notifier.send_notification(
                         subject="預約成功通知",
                         text_content=text_content,
