@@ -393,51 +393,54 @@ def handle_login_process(system):
                             "查看預約趟",
                             "查今日車趟_車號(含臨時車)",
                             "查明日車趟_車號",
+                            "預約訂車",
+                            "查詢預約",
+                            "取消預約"
                         ]
 
+                        # 等待頁面完全加載
+                        time.sleep(2)
+                        
+                        # 檢查當前URL
+                        current_url = system.driver.current_url
+                        if "netbook/book.php" in current_url or "book.php" in current_url:
+                            print("通過URL檢查確認登入成功！")
+                            return True
+                            
+                        # 檢查是否有任何一個按鈕存在
                         for button_text in success_buttons:
-                            button = system.driver.find_element(
-                                By.XPATH, f"//input[@value='{button_text}']"
+                            try:
+                                button = system.driver.find_element(
+                                    By.XPATH, f"//input[@value='{button_text}']"
+                                )
+                                if button and button.is_displayed():
+                                    print(f"找到按鈕: {button_text}，登入成功！")
+                                    return True
+                            except:
+                                continue
+                                
+                        # 檢查是否有錯誤訊息
+                        try:
+                            error_elements = system.driver.find_elements(
+                                By.CSS_SELECTOR, ".alert-danger, .error, .w3-red"
                             )
-                            if button and button.is_displayed():
-                                print(f"找到按鈕: {button_text}，登入成功！")
-                                return True
-
-                        # 如果沒有找到任何一個按鈕，則可能登入失敗
+                            for error in error_elements:
+                                if error.is_displayed():
+                                    print(f"登入失敗 - 出現錯誤訊息: {error.text}")
+                                    return False
+                        except:
+                            pass
+                            
+                        # 如果沒有找到任何按鈕，但URL已改變，也視為登入成功
+                        if current_url != BASE_URL:
+                            print("URL已改變，登入成功！")
+                            return True
+                            
                         print("未找到登入成功後的按鈕")
+                        return False
                     except Exception as e:
                         print(f"檢查登入按鈕時出錯: {str(e)}")
-
-                    # 保留原有的URL檢查作為備用方案
-                    current_url = system.driver.current_url
-                    if "netbook/book.php" in current_url or "book.php" in current_url:
-                        print("通過URL檢查確認登入成功！")
-                        return True
-
-                    # 檢查是否有錯誤訊息
-                    try:
-                        error_elements = system.driver.find_elements(
-                            By.CSS_SELECTOR, ".alert-danger, .error, .w3-red"
-                        )
-                        for error in error_elements:
-                            if error.is_displayed():
-                                print(f"登入失敗 - 出現錯誤訊息: {error.text}")
-                                break
-                    except:
-                        pass
-
-                    # 檢查是否有警告對話框
-                    try:
-                        alert = system.driver.switch_to.alert
-                        alert_text = alert.text
-                        print(f"檢測到警告對話框: {alert_text}")
-                        alert.accept()
-                    except:
-                        pass
-
-                    print("登入可能失敗，準備重試...")
-                    system.driver.refresh()
-                    time.sleep(3)
+                        return False
 
                 except Exception as form_error:
                     print(f"填寫表單時發生錯誤: {str(form_error)}")
@@ -537,6 +540,13 @@ def main():
         firefox_options.set_preference("browser.cache.memory.enable", False)
         firefox_options.set_preference("browser.cache.offline.enable", False)
         firefox_options.set_preference("network.http.use-cache", False)
+        # 添加處理重複提交警告的設定
+        firefox_options.set_preference("browser.formfill.enable", False)
+        firefox_options.set_preference("browser.sessionstore.resume_from_crash", False)
+        firefox_options.set_preference("browser.sessionstore.resume_session_once", False)
+        firefox_options.set_preference("browser.sessionstore.max_resumed_crashes", 0)
+        firefox_options.set_preference("browser.sessionstore.warnOnQuit", False)
+        firefox_options.set_preference("browser.sessionstore.enabled", False)
 
         # 如果需要無頭模式
         if args.headless:

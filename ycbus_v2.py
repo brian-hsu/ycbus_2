@@ -1246,9 +1246,29 @@ class BusBookingSystem:
         """導航到登入頁面"""
         try:
             self.logger.info(f"正在導航到登入頁面: {BASE_URL}")
+            
+            # 先嘗試處理可能存在的警告對話框
+            try:
+                alert = self.driver.switch_to.alert
+                alert.accept()
+                self.logger.info("已處理警告對話框")
+            except:
+                pass
+                
+            # 導航到登入頁面
             self.driver.get(BASE_URL)
+            
             # 等待頁面加載完成
             self.wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
+            
+            # 再次檢查是否有警告對話框
+            try:
+                alert = self.driver.switch_to.alert
+                alert.accept()
+                self.logger.info("已處理頁面加載後的警告對話框")
+            except:
+                pass
+                
             self.logger.info("成功導航到登入頁面")
             return True
         except Exception as e:
