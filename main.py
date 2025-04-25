@@ -43,8 +43,9 @@ def load_data_from_txt():
 
     result = {}
     for line in lines:
-        key, value = line.strip().split(":")
-        result[key] = value
+        if ':' in line:  # 確保行包含冒號
+            key, value = line.strip().split(":", 1)  # 只分割第一個冒號
+            result[key.strip()] = value.strip()
     return result
 
 
@@ -503,12 +504,27 @@ def main():
             print(f"從 Google Sheet 讀取資料失敗: {str(e)}")
             print("嘗試從本地文件讀取資料...")
             data = load_data_from_txt()
-            booking_data_dict = data.copy()
+            booking_data_dict = {
+                "name": data.get("name", ""),
+                "num": data.get("ycbus_password", ""),
+                "date": data.get("system_booking_date", ""),
+                "go_time": data.get("goto_time", ""),
+                "back_time": data.get("return_time", ""),
+                "goto_pickup_area": data.get("goto_pickup_area", ""),
+                "goto_dropoff_area": data.get("goto_dropoff_area", ""),
+                "goto_pickup_address": data.get("goto_pickup_address", ""),
+                "goto_dropoff_address": data.get("goto_dropoff_address", ""),
+                "return_pickup_area": data.get("return_pickup_area", ""),
+                "return_dropoff_area": data.get("return_dropoff_area", ""),
+                "return_pickup_address": data.get("return_pickup_address", ""),
+                "return_dropoff_address": data.get("return_dropoff_address", ""),
+                "Message": data.get("note_message", "")
+            }
             notification_data = {
                 "line_token": data.get("line_token", ""),
                 "gmail_sender": data.get("gmail_sender", ""),
                 "gmail_password": data.get("gmail_password", ""),
-                "recipient_emails": data.get("recipient_emails", "").split(",") if "recipient_emails" in data else []
+                "recipient_emails": [email.strip() for email in data.get("recipient_emails", "").split(",") if email.strip()]
             }
 
         booking_data = BookingData(**booking_data_dict)
