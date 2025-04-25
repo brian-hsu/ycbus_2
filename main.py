@@ -537,7 +537,8 @@ def main():
 
         booking_data = BookingData(**booking_data_dict)
         
-        # 創建通知器 - 只使用電子郵件通知
+        # 創建通知器 - 電子郵件通知變成可選的
+        notifier = None
         if (notification_data.get("gmail_sender") and 
             notification_data.get("gmail_password") and 
             notification_data.get("recipient_emails")):
@@ -549,8 +550,7 @@ def main():
                 sender_name="預約系統通知"
             )
         else:
-            print("錯誤：未配置電子郵件通知所需的設定")
-            raise ValueError("請在 data.txt 中配置 gmail_sender、gmail_password 和 recipient_emails")
+            print("警告：未配置電子郵件通知所需的設定，將繼續執行但不發送通知")
 
         # 創建Firefox選項並設定偏好
         firefox_options = Options()
@@ -593,7 +593,8 @@ def main():
                 error_msg = "登入失敗，無法完成預約"
                 print(error_msg)
                 try:
-                    notifier.send_notification(error_msg)
+                    if notifier:
+                        notifier.send_notification(error_msg)
                 except Exception as notify_error:
                     print(f"發送通知失敗: {str(notify_error)}")
                 return
@@ -604,9 +605,10 @@ def main():
                 success_msg = "預約成功"
                 print(success_msg)
                 
-                try:
-                    # 準備郵件內容
-                    text_content = f"""
+                if notifier:  # 只有在有通知器的情況下才發送通知
+                    try:
+                        # 準備郵件內容
+                        text_content = f"""
 預約成功通知
 ====================
 預約日期：{booking_data.date}
@@ -620,8 +622,8 @@ def main():
 ====================
 此為自動發送的通知郵件，請勿直接回覆。
 """
-                    
-                    html_content = f"""
+                        
+                        html_content = f"""
 <html>
 <head>
     <style>
@@ -654,93 +656,95 @@ def main():
 </body>
 </html>
 """
-                    
-                    # 檢查截圖是否存在
-                    attachments = []
-                    if screenshot_path:
-                        try:
-                            # 檢查檔案是否存在
-                            if not os.path.exists(screenshot_path):
-                                print(f"錯誤：截圖檔案不存在: {screenshot_path}")
-                                raise FileNotFoundError(f"截圖檔案不存在: {screenshot_path}")
-                            
-                            # 檢查檔案是否可讀
-                            if not os.access(screenshot_path, os.R_OK):
-                                print(f"錯誤：截圖檔案無法讀取: {screenshot_path}")
-                                raise PermissionError(f"截圖檔案無法讀取: {screenshot_path}")
-                            
-                            # 檢查檔案大小
-                            file_size = os.path.getsize(screenshot_path)
-                            if file_size == 0:
-                                print(f"錯誤：截圖檔案大小為 0: {screenshot_path}")
-                                raise ValueError(f"截圖檔案大小為 0: {screenshot_path}")
-                            
-                            # 檢查檔案格式
+                        
+                        # 檢查截圖是否存在
+                        attachments = []
+                        if screenshot_path:
                             try:
-                                with Image.open(screenshot_path) as img:
-                                    img.verify()
+                                # 檢查檔案是否存在
+                                if not os.path.exists(screenshot_path):
+                                    print(f"錯誤：截圖檔案不存在: {screenshot_path}")
+                                    raise FileNotFoundError(f"截圖檔案不存在: {screenshot_path}")
+                                
+                                # 檢查檔案是否可讀
+                                if not os.access(screenshot_path, os.R_OK):
+                                    print(f"錯誤：截圖檔案無法讀取: {screenshot_path}")
+                                    raise PermissionError(f"截圖檔案無法讀取: {screenshot_path}")
+                                
+                                # 檢查檔案大小
+                                file_size = os.path.getsize(screenshot_path)
+                                if file_size == 0:
+                                    print(f"錯誤：截圖檔案大小為 0: {screenshot_path}")
+                                    raise ValueError(f"截圖檔案大小為 0: {screenshot_path}")
+                                
+                                # 檢查檔案格式
+                                try:
+                                    with Image.open(screenshot_path) as img:
+                                        img.verify()
+                                except Exception as e:
+                                    print(f"錯誤：截圖檔案格式無效: {screenshot_path}, 錯誤: {str(e)}")
+                                    raise ValueError(f"截圖檔案格式無效: {screenshot_path}")
+                                
+                                attachments.append(screenshot_path)
+                                print(f"成功添加截圖附件: {screenshot_path}, 檔案大小: {file_size} bytes")
+                                
                             except Exception as e:
-                                print(f"錯誤：截圖檔案格式無效: {screenshot_path}, 錯誤: {str(e)}")
-                                raise ValueError(f"截圖檔案格式無效: {screenshot_path}")
-                            
-                            attachments.append(screenshot_path)
-                            print(f"成功添加截圖附件: {screenshot_path}, 檔案大小: {file_size} bytes")
-                            
-                        except Exception as e:
-                            print(f"處理截圖檔案時發生錯誤: {str(e)}")
-                            # 繼續執行，不中斷郵件發送
-                    else:
-                        print("警告：未提供截圖路徑")
-                    
-                    # 發送郵件
-                    gmail_sender = GmailSender(
-                        sender_email=notification_data["gmail_sender"],
-                        app_password=notification_data["gmail_password"]
-                    )
-                    
-                    # 確保所有參數都是字串類型
-                    subject = str("預約成功通知")
-                    text_content = str(text_content)
-                    html_content = str(html_content)
-                    
-                    success = gmail_sender.send_email(
-                        recipient_emails=notification_data["recipient_emails"],
-                        subject=subject,
-                        text_content=text_content,
-                        html_content=html_content,
-                        image_paths=attachments,
-                        sender_name="預約系統通知"
-                    )
-                    
-                    if success:
-                        print(f"成功發送郵件通知，附加檔案：{attachments}")
-                    else:
-                        print("郵件發送失敗")
-                    
-                    # 清理截圖檔案
-                    for path in attachments:
-                        try:
-                            os.remove(path)
-                            print(f"已刪除暫存檔案：{path}")
-                        except Exception as e:
-                            print(f"刪除檔案失敗：{path}, 錯誤：{str(e)}")
-                    
-                except Exception as notify_error:
-                    print(f"發送成功通知失敗: {str(notify_error)}")
+                                print(f"處理截圖檔案時發生錯誤: {str(e)}")
+                                # 繼續執行，不中斷郵件發送
+                        else:
+                            print("警告：未提供截圖路徑")
+                        
+                        # 發送郵件
+                        gmail_sender = GmailSender(
+                            sender_email=notification_data["gmail_sender"],
+                            app_password=notification_data["gmail_password"]
+                        )
+                        
+                        # 確保所有參數都是字串類型
+                        subject = str("預約成功通知")
+                        text_content = str(text_content)
+                        html_content = str(html_content)
+                        
+                        success = gmail_sender.send_email(
+                            recipient_emails=notification_data["recipient_emails"],
+                            subject=subject,
+                            text_content=text_content,
+                            html_content=html_content,
+                            image_paths=attachments,
+                            sender_name="預約系統通知"
+                        )
+                        
+                        if success:
+                            print(f"成功發送郵件通知，附加檔案：{attachments}")
+                        else:
+                            print("郵件發送失敗")
+                        
+                        # 清理截圖檔案
+                        for path in attachments:
+                            try:
+                                os.remove(path)
+                                print(f"已刪除暫存檔案：{path}")
+                            except Exception as e:
+                                print(f"刪除檔案失敗：{path}, 錯誤：{str(e)}")
+                        
+                    except Exception as notify_error:
+                        print(f"發送成功通知失敗: {str(notify_error)}")
             else:
                 fail_msg = "預約失敗"
                 print(fail_msg)
-                try:
-                    notifier.send_notification(fail_msg)
-                except Exception as notify_error:
-                    print(f"發送失敗通知失敗: {str(notify_error)}")
+                if notifier:  # 只有在有通知器的情況下才發送通知
+                    try:
+                        notifier.send_notification(fail_msg)
+                    except Exception as notify_error:
+                        print(f"發送失敗通知失敗: {str(notify_error)}")
         except Exception as e:
             error_msg = f"預約過程中發生錯誤: {str(e)}"
             print(error_msg)
-            try:
-                notifier.send_notification(error_msg)
-            except Exception as notify_error:
-                print(f"發送錯誤通知失敗: {str(notify_error)}")
+            if notifier:  # 只有在有通知器的情況下才發送通知
+                try:
+                    notifier.send_notification(error_msg)
+                except Exception as notify_error:
+                    print(f"發送錯誤通知失敗: {str(notify_error)}")
         finally:
             if hasattr(system, "driver"):
                 try:
