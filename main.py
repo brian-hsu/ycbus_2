@@ -90,8 +90,16 @@ def load_data_from_gsheet():
         "line_token": data.get("line_token", ""),
         "gmail_sender": data.get("gmail_sender", ""),
         "gmail_password": data.get("gmail_password", ""),
-        "recipient_emails": data.get("recipient_emails", "").split(",") if "recipient_emails" in data else []
+        "recipient_emails": [email.strip() for email in data.get("recipient_emails", "").split(",") if email.strip()]
     }
+
+    # 檢查必要的電子郵件設定
+    if not notification_data["gmail_sender"] or not notification_data["gmail_password"] or not notification_data["recipient_emails"]:
+        print("警告：電子郵件設定不完整")
+        print(f"gmail_sender: {notification_data['gmail_sender']}")
+        print(f"gmail_password: {notification_data['gmail_password']}")
+        print(f"recipient_emails: {notification_data['recipient_emails']}")
+        raise ValueError("請在 data.txt 中配置完整的電子郵件設定")
 
     return booking_data, notification_data
 
