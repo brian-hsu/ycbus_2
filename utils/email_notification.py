@@ -52,11 +52,13 @@ class EmailNotifier:
 
             # 添加純文字內容
             if text_content:
-                msg.attach(MIMEText(text_content, 'plain', 'utf-8'))
+                text_part = MIMEText(text_content, 'plain', 'utf-8')
+                msg.attach(text_part)
 
             # 添加 HTML 內容
             if html_content:
-                msg.attach(MIMEText(html_content, 'html', 'utf-8'))
+                html_part = MIMEText(html_content, 'html', 'utf-8')
+                msg.attach(html_part)
 
             # 添加圖片附件
             if image_paths:
@@ -64,7 +66,8 @@ class EmailNotifier:
                     if os.path.exists(image_path):
                         with open(image_path, 'rb') as f:
                             img = MIMEImage(f.read())
-                            img.add_header('Content-Disposition', 'attachment', filename=os.path.basename(image_path))
+                            img.add_header('Content-Disposition', 'attachment', 
+                                         filename=os.path.basename(image_path))
                             msg.attach(img)
 
             # 發送郵件
