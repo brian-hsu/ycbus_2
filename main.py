@@ -3,6 +3,7 @@ import argparse
 from ycbus_v2 import BusBookingSystem, BookingData
 from utils.config_loader import load_config
 from utils.notification import LineNotifier
+from utils.email_notification import EmailNotifier
 from read_google_sheet import ReadGSheet
 from utils.captcha_handler import CaptchaHandler
 import time
@@ -81,7 +82,15 @@ def load_data_from_gsheet():
     if booking_data["return_dropoff_address"] == "same_pickup":
         booking_data["return_dropoff_address"] = booking_data["goto_pickup_address"]
 
-    return booking_data, data["line_token"]
+    # 返回预约数据和通知相关信息
+    notification_data = {
+        "line_token": data.get("line_token", ""),
+        "gmail_sender": data.get("gmail_sender", ""),
+        "gmail_password": data.get("gmail_password", ""),
+        "recipient_emails": data.get("recipient_emails", "").split(",") if "recipient_emails" in data else []
+    }
+
+    return booking_data, notification_data
 
 
 def handle_login_process(system):
@@ -478,20 +487,41 @@ def main():
             print("已清理臨時目錄中的舊文件")
 
         args = parse_arguments()
+        args.headless = True
         print(f"運行模式: {args.mode}, 無頭模式: {args.headless}")
 
         try:
-            booking_data_dict, line_token = load_data_from_gsheet()
+            booking_data_dict, notification_data = load_data_from_gsheet()
             print("成功從 Google Sheet 讀取預約資料")
             print(booking_data_dict)
         except Exception as e:
             print(f"從 Google Sheet 讀取資料失敗: {str(e)}")
             print("嘗試從本地文件讀取資料...")
-            booking_data_dict = load_data_from_txt()
-            line_token = booking_data_dict.get("line_token", "")
+            data = load_data_from_txt()
+            booking_data_dict = data.copy()
+            notification_data = {
+                "line_token": data.get("line_token", ""),
+                "gmail_sender": data.get("gmail_sender", ""),
+                "gmail_password": data.get("gmail_password", ""),
+                "recipient_emails": data.get("recipient_emails", "").split(",") if "recipient_emails" in data else []
+            }
 
         booking_data = BookingData(**booking_data_dict)
-        notifier = LineNotifier(line_token)
+        
+        # 創建通知器 - 優先使用電子郵件通知，如果電子郵件配置不完整則使用Line通知
+        if (notification_data.get("gmail_sender") and 
+            notification_data.get("gmail_password") and 
+            notification_data.get("recipient_emails")):
+            print("使用電子郵件進行通知")
+            notifier = EmailNotifier(
+                sender_email=notification_data["gmail_sender"],
+                app_password=notification_data["gmail_password"],
+                recipient_emails=notification_data["recipient_emails"],
+                sender_name="預約系統通知"
+            )
+        else:
+            print("使用Line進行通知")
+            notifier = LineNotifier(notification_data["line_token"])
 
         # 創建Firefox選項並設定偏好
         firefox_options = Options()
@@ -533,12 +563,96 @@ def main():
                 return
 
             print("登入成功，開始預約流程...")
-            if system.book_journey():
+            success, screenshot_path = system.book_journey()
+            if success:
                 success_msg = "預約成功"
                 print(success_msg)
-                screenshot_path = system.capture_confirmation()
+                
                 try:
-                    notifier.send_notification(success_msg, screenshot_path)
+                    # 準備郵件內容
+                    text_content = f"""
+預約成功通知
+====================
+預約日期：{booking_data.date}
+去程時間：{booking_data.go_time}
+回程時間：{booking_data.back_time}
+去程上車地點：{booking_data.goto_pickup_address}
+去程下車地點：{booking_data.goto_dropoff_address}
+回程上車地點：{booking_data.return_pickup_address}
+回程下車地點：{booking_data.return_dropoff_address}
+備註訊息：{booking_data.Message}
+====================
+此為自動發送的通知郵件，請勿直接回覆。
+"""
+                    
+                    html_content = f"""
+<html>
+<head>
+    <style>
+        body {{ font-family: Arial, sans-serif; }}
+        .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+        .header {{ background-color: #4CAF50; color: white; padding: 10px; text-align: center; }}
+        .content {{ padding: 20px; }}
+        .footer {{ font-size: 12px; color: #666; text-align: center; margin-top: 20px; }}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h2>預約成功通知</h2>
+        </div>
+        <div class="content">
+            <p><strong>預約日期：</strong>{booking_data.date}</p>
+            <p><strong>去程時間：</strong>{booking_data.go_time}</p>
+            <p><strong>回程時間：</strong>{booking_data.back_time}</p>
+            <p><strong>去程上車地點：</strong>{booking_data.goto_pickup_address}</p>
+            <p><strong>去程下車地點：</strong>{booking_data.goto_dropoff_address}</p>
+            <p><strong>回程上車地點：</strong>{booking_data.return_pickup_address}</p>
+            <p><strong>回程下車地點：</strong>{booking_data.return_dropoff_address}</p>
+            <p><strong>備註訊息：</strong>{booking_data.Message}</p>
+        </div>
+        <div class="footer">
+            此為自動發送的通知郵件，請勿直接回覆。
+        </div>
+    </div>
+</body>
+</html>
+"""
+                    
+                    # Gmail 通知設定
+                    gmail_notifier = EmailNotifier(
+                        sender_email=notification_data["gmail_sender"],
+                        app_password=notification_data["gmail_password"],
+                        recipient_emails=notification_data["recipient_emails"],
+                        sender_name="預約系統通知"
+                    )
+                    
+                    # 檢查截圖是否存在
+                    attachments = []
+                    if screenshot_path and os.path.exists(screenshot_path):
+                        attachments.append(screenshot_path)
+                        print(f"找到截圖檔案：{screenshot_path}")
+                    else:
+                        print(f"警告：找不到截圖檔案：{screenshot_path}")
+                    
+                    # 發送郵件
+                    gmail_notifier.send_notification(
+                        subject="預約成功通知",
+                        text_content=text_content,
+                        html_content=html_content,
+                        image_paths=attachments
+                    )
+                    
+                    print(f"成功發送郵件通知，附加檔案：{attachments}")
+                    
+                    # 清理截圖檔案
+                    for path in attachments:
+                        try:
+                            os.remove(path)
+                            print(f"已刪除暫存檔案：{path}")
+                        except Exception as e:
+                            print(f"刪除檔案失敗：{path}, 錯誤：{str(e)}")
+                    
                 except Exception as notify_error:
                     print(f"發送成功通知失敗: {str(notify_error)}")
             else:

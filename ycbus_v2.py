@@ -267,31 +267,93 @@ class BusBookingSystem:
                 book_button = self.wait_for_element("input[value='預約訂車'][onclick*='act.value=\\'netbook\\';snt()']")
                 if not book_button:
                     self.logger.error("找不到預約訂車按鈕")
-                    return False
+                    return False, None
                 book_button.click()
                 self.logger.info("已點擊預約訂車按鈕")
                 # 等待頁面加載
                 time.sleep(2)
             except Exception as e:
                 self.logger.error(f"點擊預約訂車按鈕失敗: {str(e)}")
-                return False
+                return False, None
             
             if not self.select_journey_details():
                 self.logger.error("選擇行程詳情失敗")
-                return False
+                return False, None
             
             if not self.fill_address_details():
                 self.logger.error("填寫地址詳情失敗")
-                return False
+                return False, None
             
             self.logger.info("保存預約...")
             # self.save_booking()
             self.logger.info("預約成功！")
-            return True
             
+            # 在點擊存檔按鈕前截圖
+            screenshot_path = None
+            try:
+                self.logger.info("在點擊存檔按鈕前截取表單畫面...")
+                # 獲取視窗大小
+                original_size = self.driver.get_window_size()
+                
+                # 設置視窗大小為頁面大小
+                width = self.driver.execute_script("return document.body.parentNode.scrollWidth")
+                height = self.driver.execute_script("return document.body.parentNode.scrollHeight")
+                self.driver.set_window_size(width, height)
+                
+                # 等待頁面加載
+                time.sleep(2)
+                
+                # 生成時間戳記檔名
+                now_time = datetime.datetime.now()
+                date_time = now_time.strftime("%Y_%m%d_%H%M_%S")
+                screenshot_path = os.path.abspath(f"form_{date_time}.png")
+                
+                # 截取表單區域
+                form_element = self.driver.find_element(By.CSS_SELECTOR, "#form1")
+                form_element.screenshot(screenshot_path)
+                
+                # 恢復原始視窗大小
+                self.driver.set_window_size(original_size["width"], original_size["height"])
+                
+                self.logger.info(f"存檔前表單畫面已保存至: {screenshot_path}")
+            except Exception as e:
+                self.logger.warning(f"存檔前截取表單畫面失敗: {str(e)}")
+                # 截圖失敗不影響後續操作，繼續執行
+            
+            # 點擊存檔按鈕
+            try:
+                self.logger.info("點擊存檔按鈕...")
+                save_button = self.wait_for_element("input#btnSave")
+                if not save_button:
+                    self.logger.error("找不到存檔按鈕")
+                    return False, None
+                
+                # 確保按鈕可見並可點擊
+                if not save_button.is_displayed():
+                    self.logger.warning("存檔按鈕不可見，嘗試使其可見")
+                    self.driver.execute_script("arguments[0].style.display = 'block';", save_button)
+                
+                try:
+                    # save_button.click()
+                    self.logger.info("已點擊存檔按鈕")
+                except Exception as click_error:
+                    self.logger.error(f"點擊存檔按鈕失敗: {str(click_error)}")
+                    try:
+                        self.logger.info("嘗試使用JavaScript點擊存檔按鈕")
+                        self.driver.execute_script("arguments[0].click();", save_button)
+                        self.logger.info("已使用JavaScript點擊存檔按鈕")
+                    except Exception as js_error:
+                        self.logger.error(f"使用JavaScript點擊存檔按鈕失敗: {str(js_error)}")
+                        return False, None
+            except Exception as e:
+                self.logger.error(f"點擊存檔按鈕過程中出錯: {str(e)}")
+                return False, None
+            
+            self.logger.info("地址詳情填寫完成")
+            return True, screenshot_path
         except Exception as e:
             self.logger.error(f"預約失敗: {str(e)}")
-            return False
+            return False, None
 
     def _setup_firefox_driver(self, headless: bool) -> webdriver:
         """設置 Firefox 瀏覽器驅動"""
@@ -1112,71 +1174,11 @@ class BusBookingSystem:
                 self.logger.error(f"填寫回程下車地址失敗: {str(e)}")
                 return False
             
-            # 在點擊存檔按鈕前截圖
-            try:
-                self.logger.info("在點擊存檔按鈕前截取表單畫面...")
-                # 獲取視窗大小
-                original_size = self.driver.get_window_size()
-                
-                # 設置視窗大小為頁面大小
-                width = self.driver.execute_script("return document.body.parentNode.scrollWidth")
-                height = self.driver.execute_script("return document.body.parentNode.scrollHeight")
-                self.driver.set_window_size(width, height)
-                
-                # 等待頁面加載
-                time.sleep(2)
-                
-                # 生成時間戳記檔名
-                now_time = datetime.datetime.now()
-                date_time = now_time.strftime("%Y_%m%d_%H%M_%S")
-                screenshot_path = f"pre_save_{date_time}_form.png"
-                
-                # 截取表單區域
-                form_element = self.driver.find_element(By.CSS_SELECTOR, "#form1")
-                form_element.screenshot(screenshot_path)
-                
-                # 恢復原始視窗大小
-                self.driver.set_window_size(original_size["width"], original_size["height"])
-                
-                self.logger.info(f"存檔前表單畫面已保存至: {screenshot_path}")
-            except Exception as e:
-                self.logger.warning(f"存檔前截取表單畫面失敗: {str(e)}")
-                # 截圖失敗不影響後續操作，繼續執行
-            
-            # 點擊存檔按鈕
-            try:
-                self.logger.info("點擊存檔按鈕...")
-                save_button = self.wait_for_element("input#btnSave")
-                if not save_button:
-                    self.logger.error("找不到存檔按鈕")
-                    return False
-                
-                # 確保按鈕可見並可點擊
-                if not save_button.is_displayed():
-                    self.logger.warning("存檔按鈕不可見，嘗試使其可見")
-                    self.driver.execute_script("arguments[0].style.display = 'block';", save_button)
-                
-                try:
-                    # save_button.click()
-                    self.logger.info("已點擊存檔按鈕")
-                except Exception as click_error:
-                    self.logger.error(f"點擊存檔按鈕失敗: {str(click_error)}")
-                    try:
-                        self.logger.info("嘗試使用JavaScript點擊存檔按鈕")
-                        self.driver.execute_script("arguments[0].click();", save_button)
-                        self.logger.info("已使用JavaScript點擊存檔按鈕")
-                    except Exception as js_error:
-                        self.logger.error(f"使用JavaScript點擊存檔按鈕失敗: {str(js_error)}")
-                        return False
-            except Exception as e:
-                self.logger.error(f"點擊存檔按鈕過程中出錯: {str(e)}")
-                return False
-            
             self.logger.info("地址詳情填寫完成")
-            return True
+            return True, screenshot_path
         except Exception as e:
             self.logger.error(f"填寫地址詳情失敗: {str(e)}")
-            return False
+            return False, None
 
     def save_booking(self) -> bool:
         """儲存預約"""
