@@ -20,6 +20,7 @@ import requests
 import random
 import base64
 from collections import Counter
+from utils.gmail_sender import GmailSender
 
 
 def parse_arguments():
@@ -657,21 +658,29 @@ def main():
                         print("警告：未提供截圖路徑")
                     
                     # 發送郵件
-                    gmail_notifier = EmailNotifier(
+                    gmail_sender = GmailSender(
                         sender_email=notification_data["gmail_sender"],
-                        app_password=notification_data["gmail_password"],
+                        app_password=notification_data["gmail_password"]
+                    )
+                    
+                    # 確保所有參數都是字串類型
+                    subject = str("預約成功通知")
+                    text_content = str(text_content)
+                    html_content = str(html_content)
+                    
+                    success = gmail_sender.send_email(
                         recipient_emails=notification_data["recipient_emails"],
+                        subject=subject,
+                        text_content=text_content,
+                        html_content=html_content,
+                        image_paths=attachments,
                         sender_name="預約系統通知"
                     )
                     
-                    gmail_notifier.send_notification(
-                        subject="預約成功通知",
-                        text_content=text_content,
-                        html_content=html_content,
-                        image_paths=attachments
-                    )
-                    
-                    print(f"成功發送郵件通知，附加檔案：{attachments}")
+                    if success:
+                        print(f"成功發送郵件通知，附加檔案：{attachments}")
+                    else:
+                        print("郵件發送失敗")
                     
                     # 清理截圖檔案
                     for path in attachments:
