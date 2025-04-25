@@ -46,62 +46,78 @@ def load_data_from_txt():
         if ':' in line:  # 確保行包含冒號
             key, value = line.strip().split(":", 1)  # 只分割第一個冒號
             result[key.strip()] = value.strip()
+    
+    # 檢查必要的電子郵件設定
+    required_email_fields = ["gmail_sender", "gmail_password", "recipient_emails"]
+    missing_fields = [field for field in required_email_fields if not result.get(field)]
+    
+    if missing_fields:
+        print(f"警告：缺少必要的電子郵件設定: {', '.join(missing_fields)}")
+        print(f"gmail_sender: {result.get('gmail_sender', '')}")
+        print(f"gmail_password: {result.get('gmail_password', '')}")
+        print(f"recipient_emails: {result.get('recipient_emails', '')}")
+        raise ValueError("請在 data.txt 中配置完整的電子郵件設定")
+    
     return result
 
 
 def load_data_from_gsheet():
     """從 Google Sheet 讀取資料"""
-    data = load_data_from_txt()
-    read_gc = ReadGSheet()
-    gc_dict = read_gc.gsheet_cover(data["gsheet_cover"])
+    try:
+        data = load_data_from_txt()
+        read_gc = ReadGSheet()
+        gc_dict = read_gc.gsheet_cover(data["gsheet_cover"])
 
-    booking_data = {
-        "name": data["name"],
-        "num": data["ycbus_password"],
-        "date": gc_dict["ride_date"],
-        "go_time": gc_dict["goto_time"],
-        "back_time": gc_dict["return_time"],
-        "goto_pickup_area": gc_dict["goto_pickup_area"],
-        "goto_dropoff_area": gc_dict["goto_dropoff_area"],
-        "goto_pickup_address": gc_dict["goto_pickup_address"],
-        "goto_dropoff_address": gc_dict["goto_dropoff_address"],
-        "return_pickup_area": gc_dict["return_pickup_area"],
-        "return_dropoff_area": gc_dict["return_dropoff_area"],
-        "return_pickup_address": gc_dict["return_pickup_address"],
-        "return_dropoff_address": gc_dict["return_dropoff_address"],
-        "Message": gc_dict["note_message"],
-    }
+        booking_data = {
+            "name": data["name"],
+            "num": data["ycbus_password"],
+            "date": gc_dict["ride_date"],
+            "go_time": gc_dict["goto_time"],
+            "back_time": gc_dict["return_time"],
+            "goto_pickup_area": gc_dict["goto_pickup_area"],
+            "goto_dropoff_area": gc_dict["goto_dropoff_area"],
+            "goto_pickup_address": gc_dict["goto_pickup_address"],
+            "goto_dropoff_address": gc_dict["goto_dropoff_address"],
+            "return_pickup_area": gc_dict["return_pickup_area"],
+            "return_dropoff_area": gc_dict["return_dropoff_area"],
+            "return_pickup_address": gc_dict["return_pickup_address"],
+            "return_dropoff_address": gc_dict["return_dropoff_address"],
+            "Message": gc_dict["note_message"],
+        }
 
-    # 處理回程地址的特殊情況
-    if booking_data["return_pickup_area"] == "same_goto_dropoff":
-        booking_data["return_pickup_area"] = booking_data["goto_dropoff_area"]
+        # 處理回程地址的特殊情況
+        if booking_data["return_pickup_area"] == "same_goto_dropoff":
+            booking_data["return_pickup_area"] = booking_data["goto_dropoff_area"]
 
-    if booking_data["return_pickup_address"] == "same_goto_dropoff":
-        booking_data["return_pickup_address"] = booking_data["goto_dropoff_address"]
+        if booking_data["return_pickup_address"] == "same_goto_dropoff":
+            booking_data["return_pickup_address"] = booking_data["goto_dropoff_address"]
 
-    if booking_data["return_dropoff_area"] == "same_pickup":
-        booking_data["return_dropoff_area"] = booking_data["goto_pickup_area"]
+        if booking_data["return_dropoff_area"] == "same_pickup":
+            booking_data["return_dropoff_area"] = booking_data["goto_pickup_area"]
 
-    if booking_data["return_dropoff_address"] == "same_pickup":
-        booking_data["return_dropoff_address"] = booking_data["goto_pickup_address"]
+        if booking_data["return_dropoff_address"] == "same_pickup":
+            booking_data["return_dropoff_address"] = booking_data["goto_pickup_address"]
 
-    # 返回预约数据和通知相关信息
-    notification_data = {
-        "line_token": data.get("line_token", ""),
-        "gmail_sender": data.get("gmail_sender", ""),
-        "gmail_password": data.get("gmail_password", ""),
-        "recipient_emails": [email.strip() for email in data.get("recipient_emails", "").split(",") if email.strip()]
-    }
+        # 返回预约数据和通知相关信息
+        notification_data = {
+            "line_token": data.get("line_token", ""),
+            "gmail_sender": data.get("gmail_sender", ""),
+            "gmail_password": data.get("gmail_password", ""),
+            "recipient_emails": [email.strip() for email in data.get("recipient_emails", "").split(",") if email.strip()]
+        }
 
-    # 檢查必要的電子郵件設定
-    if not notification_data["gmail_sender"] or not notification_data["gmail_password"] or not notification_data["recipient_emails"]:
-        print("警告：電子郵件設定不完整")
-        print(f"gmail_sender: {notification_data['gmail_sender']}")
-        print(f"gmail_password: {notification_data['gmail_password']}")
-        print(f"recipient_emails: {notification_data['recipient_emails']}")
-        raise ValueError("請在 data.txt 中配置完整的電子郵件設定")
+        # 檢查必要的電子郵件設定
+        if not notification_data["gmail_sender"] or not notification_data["gmail_password"] or not notification_data["recipient_emails"]:
+            print("警告：電子郵件設定不完整")
+            print(f"gmail_sender: {notification_data['gmail_sender']}")
+            print(f"gmail_password: {notification_data['gmail_password']}")
+            print(f"recipient_emails: {notification_data['recipient_emails']}")
+            raise ValueError("請在 data.txt 中配置完整的電子郵件設定")
 
-    return booking_data, notification_data
+        return booking_data, notification_data
+    except Exception as e:
+        print(f"從 Google Sheet 讀取資料失敗: {str(e)}")
+        raise
 
 
 def handle_login_process(system):
@@ -535,22 +551,23 @@ def main():
                 "recipient_emails": [email.strip() for email in data.get("recipient_emails", "").split(",") if email.strip()]
             }
 
+            # 檢查電子郵件設定
+            if not notification_data["gmail_sender"] or not notification_data["gmail_password"] or not notification_data["recipient_emails"]:
+                print("警告：電子郵件設定不完整")
+                print(f"gmail_sender: {notification_data['gmail_sender']}")
+                print(f"gmail_password: {notification_data['gmail_password']}")
+                print(f"recipient_emails: {notification_data['recipient_emails']}")
+                raise ValueError("請在 data.txt 中配置完整的電子郵件設定")
+
         booking_data = BookingData(**booking_data_dict)
         
-        # 創建通知器 - 電子郵件通知變成可選的
-        notifier = None
-        if (notification_data.get("gmail_sender") and 
-            notification_data.get("gmail_password") and 
-            notification_data.get("recipient_emails")):
-            print("使用電子郵件進行通知")
-            notifier = EmailNotifier(
-                sender_email=notification_data["gmail_sender"],
-                app_password=notification_data["gmail_password"],
-                recipient_emails=notification_data["recipient_emails"],
-                sender_name="預約系統通知"
-            )
-        else:
-            print("警告：未配置電子郵件通知所需的設定，將繼續執行但不發送通知")
+        # 創建通知器
+        notifier = EmailNotifier(
+            sender_email=notification_data["gmail_sender"],
+            app_password=notification_data["gmail_password"],
+            recipient_emails=notification_data["recipient_emails"],
+            sender_name="預約系統通知"
+        )
 
         # 創建Firefox選項並設定偏好
         firefox_options = Options()
