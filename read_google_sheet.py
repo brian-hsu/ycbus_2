@@ -3,9 +3,7 @@ import google.auth
 from google.oauth2 import service_account
 from datetime import datetime
 import pysnooper
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
+from gmail_sender import GmailSender
 
 
 class ReadGSheet:
@@ -20,6 +18,11 @@ class ReadGSheet:
         # 使用凭据创建客户端
         self.gc = pygsheets.authorize(custom_credentials=credentials)
         self.mydata = self.read_txt_to_dict(r"data.txt")
+        # 初始化 Gmail 寄件器
+        self.gmail_sender = GmailSender(
+            sender_email=self.mydata["gmail_sender"],
+            app_password=self.mydata["gmail_password"]
+        )
 
     @staticmethod
     def read_txt_to_dict(file_name):
@@ -31,7 +34,11 @@ class ReadGSheet:
         for line in lines:
             # 分割每行的資訊並加入字典
             key, value = line.strip().split(":")
-            result[key] = value
+            # 如果是收件者列表，則分割成列表
+            if key == "recipient_emails":
+                result[key] = value.split(",")
+            else:
+                result[key] = value
 
         return result
 
@@ -47,31 +54,14 @@ class ReadGSheet:
         print(dict_x)
         return dict_x
 
-    @staticmethod
-    def send_email(msg, email_config):
-        sender_email = email_config["sender_email"]
-        sender_password = email_config["sender_password"]
-        receiver_email = email_config["receiver_email"]
-        smtp_server = email_config["smtp_server"]
-        smtp_port = int(email_config["smtp_port"])
-
-        # 創建郵件
-        message = MIMEMultipart()
-        message["From"] = sender_email
-        message["To"] = receiver_email
-        message["Subject"] = "Jenkins Job 更新通知"
-
-        # 添加郵件內容
-        message.attach(MIMEText(msg, "plain"))
-
-        # 發送郵件
+    def send_email(self, msg, email_config):
         try:
-            with smtplib.SMTP(smtp_server, smtp_port) as server:
-                server.starttls()
-                server.login(sender_email, sender_password)
-                server.send_message(message)
-            print("郵件發送成功！")
-            return True
+            return self.gmail_sender.send_email(
+                recipient_emails=self.mydata["recipient_emails"],
+                subject="Jenkins Job 更新通知",
+                text_content=msg,
+                sender_name=self.mydata.get("name", "預約系統通知")
+            )
         except Exception as e:
             print(f"郵件發送失敗：{str(e)}")
             return False
@@ -108,12 +98,12 @@ class ReadGSheet:
 
         # 比较今天的日期与给定的日期
         if given_date >= today:
-            job = "Bus-new"
+            job = "ycbus"
             print("给定的日期是未来时间")
             from update_jenkins_job import UpdateJenkinsJob
             jenkins = UpdateJenkinsJob()
 
-            job_up_time = f"58 6 {date_l[1]} {date_l[0]} *"
+            job_up_time = f"00 7 {date_l[1]} {date_l[0]} *"
             print(f"update [{job}] => {job_up_time}")
             jenkins.job_update_trigger(job, job_up_time)
 
@@ -121,16 +111,9 @@ class ReadGSheet:
             formatted_date = f"{date_l[0]}/{date_l[1]}"
 
             if sent_dates != formatted_date:
-                email_config = {
-                    "sender_email": self.mydata["sender_email"],
-                    "sender_password": self.mydata["sender_password"],
-                    "receiver_email": self.mydata["receiver_email"],
-                    "smtp_server": self.mydata["smtp_server"],
-                    "smtp_port": self.mydata["smtp_port"]
-                }
                 self.send_email(
-                    f"Job={job}, Set trigger date: {date_l[0]}/{date_l[1]}, AM:6:58",
-                    email_config
+                    f"Job={job}, Set trigger date: {date_l[0]}/{date_l[1]}, AM:7:00",
+                    {}  # 空字典，因為我們現在直接從 self.mydata 讀取
                 )
                 record_sent_date(formatted_date)
         else:

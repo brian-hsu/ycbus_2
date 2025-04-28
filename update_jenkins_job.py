@@ -4,7 +4,7 @@ import jenkins
 class UpdateJenkinsJob:
     def __init__(self):
         # 連接到 Jenkins 服務器
-        jenkins_url = "http://10.0.0.3:18080"
+        jenkins_url = "http://10.0.0.3:18081"
 
         mydata = self.read_txt_to_dict(r"data.txt")
         jenkins_username = mydata["jenkins_name"]
