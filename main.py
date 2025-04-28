@@ -590,6 +590,20 @@ def main():
         firefox_options.set_preference("browser.sessionstore.warnOnQuit", False)
         firefox_options.set_preference("browser.sessionstore.enabled", False)
 
+        # 添加中文語言和字體相關設定
+        firefox_options.set_preference("intl.accept_languages", "zh-TW")
+        firefox_options.set_preference("font.language.group", "zh-TW")
+        firefox_options.set_preference("font.name.serif.zh-TW", "Noto Sans CJK TC")
+        firefox_options.set_preference("font.name.sans-serif.zh-TW", "Noto Sans CJK TC")
+        firefox_options.set_preference("font.name.monospace.zh-TW", "Noto Sans Mono CJK TC")
+        
+        # 添加效能優化設定
+        firefox_options.add_argument("--disable-gpu")  # 停用 GPU 加速
+        firefox_options.add_argument("--disable-extensions")  # 停用擴充功能
+        firefox_options.add_argument("--no-sandbox")  # 停用沙盒模式
+        firefox_options.add_argument("--disable-dev-shm-usage")  # 避免記憶體不足問題
+        firefox_options.add_argument("--lang=zh-TW")  # 設定瀏覽器語言
+
         # 如果需要無頭模式
         if args.headless:
             firefox_options.add_argument("--headless")

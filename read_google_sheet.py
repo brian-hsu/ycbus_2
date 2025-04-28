@@ -3,6 +3,9 @@ import google.auth
 from google.oauth2 import service_account
 from datetime import datetime
 import pysnooper
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 
 
 class ReadGSheet:
@@ -45,21 +48,33 @@ class ReadGSheet:
         return dict_x
 
     @staticmethod
-    def line_notify(msg, token):
-        import requests
+    def send_email(msg, email_config):
+        sender_email = email_config["sender_email"]
+        sender_password = email_config["sender_password"]
+        receiver_email = email_config["receiver_email"]
+        smtp_server = email_config["smtp_server"]
+        smtp_port = int(email_config["smtp_port"])
 
-        LINE_NOTIFY_TOKEN = token
-        print(LINE_NOTIFY_TOKEN)
+        # 創建郵件
+        message = MIMEMultipart()
+        message["From"] = sender_email
+        message["To"] = receiver_email
+        message["Subject"] = "Jenkins Job 更新通知"
 
-        url = 'https://notify-api.line.me/api/notify'
-        headers = {
-            'Authorization': 'Bearer ' + LINE_NOTIFY_TOKEN  # 設定權杖
-        }
-        data = {
-            'message': msg  # 設定要發送的訊息
-        }
+        # 添加郵件內容
+        message.attach(MIMEText(msg, "plain"))
 
-        return requests.post(url, headers=headers, data=data)  # 發送 LINE Notify
+        # 發送郵件
+        try:
+            with smtplib.SMTP(smtp_server, smtp_port) as server:
+                server.starttls()
+                server.login(sender_email, sender_password)
+                server.send_message(message)
+            print("郵件發送成功！")
+            return True
+        except Exception as e:
+            print(f"郵件發送失敗：{str(e)}")
+            return False
 
     # @pysnooper.snoop()
     def check_booking(self):
@@ -97,30 +112,27 @@ class ReadGSheet:
             print("给定的日期是未来时间")
             from update_jenkins_job import UpdateJenkinsJob
             jenkins = UpdateJenkinsJob()
-            # spec.text = "H(58-59) 6 30 4 *"
 
             job_up_time = f"58 6 {date_l[1]} {date_l[0]} *"
             print(f"update [{job}] => {job_up_time}")
             jenkins.job_update_trigger(job, job_up_time)
 
-            # <<<<<<< HEAD
-            #             get_date = self.get_sent_dates()
-            #             date_string = f"{date_l[0]}/{date_l[1]}"
-            #             if get_date != date_string:
-            #                 self.line_notify(f"Job={job}, Set trigger date: {date_l[0]}/{date_l[1]}, AM:6:58",
-            #                                  token=self.mydata["line_token"])
-            #                 self.record_sent_date(date_string)
-            # =======
             sent_dates = get_sent_dates()
             formatted_date = f"{date_l[0]}/{date_l[1]}"
 
             if sent_dates != formatted_date:
-                self.line_notify(f"Job={job}, Set trigger date: {date_l[0]}/{date_l[1]}, AM:6:58",
-                                 token=self.mydata["line_token"])
-
-            self.record_sent_date(formatted_date)
-
-        # >>>>>>> feature
+                email_config = {
+                    "sender_email": self.mydata["sender_email"],
+                    "sender_password": self.mydata["sender_password"],
+                    "receiver_email": self.mydata["receiver_email"],
+                    "smtp_server": self.mydata["smtp_server"],
+                    "smtp_port": self.mydata["smtp_port"]
+                }
+                self.send_email(
+                    f"Job={job}, Set trigger date: {date_l[0]}/{date_l[1]}, AM:6:58",
+                    email_config
+                )
+                record_sent_date(formatted_date)
         else:
             print("给定的日期是过去时间")
 
